@@ -1,5 +1,5 @@
 require "stoplight_wrapper/version"
 
 module StoplightWrapper
-  # Your code goes here...
+  require_relative './stoplight_wrapper/stoplight_connection'
 end
