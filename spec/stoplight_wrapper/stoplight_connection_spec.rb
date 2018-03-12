@@ -1,8 +1,8 @@
 RSpec.describe StoplightConnection do
   describe '.new' do
     let(:endpoint) { 'http://www.example.com' }
-    let(:options) { {} }
-    subject(:conn) { StoplightConnection.new(endpoint, options) }
+    let(:connection_options) { {} }
+    subject(:conn) { StoplightConnection.new(endpoint, connection_options) }
 
     context 'when called without any options' do
       it 'can be created without error' do
@@ -20,8 +20,8 @@ RSpec.describe StoplightConnection do
       end
     end
 
-    context 'when call with the redis option specified' do
-      let(:options) do
+    context 'when called with the redis option specified' do
+      let(:connection_options) do
         {
           redis: {'master_name' => 'testing-redis'}
         }
@@ -56,9 +56,35 @@ RSpec.describe StoplightConnection do
         .to_return(body: response_body, status: response_status)
     end
 
-    it 'makes a request' do
-      expect{ execute_request }.to_not raise_error
-      expect(mocked_endpoint).to have_been_made.once
+    describe 'request behavior' do
+      it 'makes a request' do
+        expect{ execute_request }.to_not raise_error
+        expect(mocked_endpoint).to have_been_made.once
+      end
+
+      context 'when a path is specified' do
+        let(:path) { 'resource_path' }
+        it 'makes a request to the concatenated endpoint and path' do
+          expect{ execute_request }.to_not raise_error
+          expect(mocked_endpoint).to have_been_made.once
+        end
+      end
+    end
+
+    describe 'stoplight behavior' do
+      let(:threshold) { 1 }
+      let(:light_opts) { {threshold: threshold} }
+      let(:connection_options) { {light_opts: light_opts} }
+
+      context 'when the request fails' do
+        let(:response_status) { 500 }
+
+        it 'does not make a number of requests greater than the stoplight threshold' do
+          expect{ execute_request }.to raise_error StoplightConnection::ResponseError
+          expect{ connection.execute_request(verb, path, opts) }.to raise_error
+          expect(mocked_endpoint).to have_been_made.once
+        end
+      end
     end
   end
 end
