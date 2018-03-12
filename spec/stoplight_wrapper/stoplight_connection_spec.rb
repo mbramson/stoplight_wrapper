@@ -37,6 +37,28 @@ RSpec.describe StoplightConnection do
   end
 
   describe '#execute_request' do
+    let(:endpoint) { 'http://www.example.com' }
+    let(:connection) { StoplightConnection.new(endpoint) }
+    let(:verb) { :get }
+    let(:path) { '' }
+    let(:opts) { {} }
 
+    let(:stubbed_url) { "#{endpoint}/#{path}" }
+    let(:response_body) { '' }
+    let(:response_status) { 200 }
+
+    subject(:execute_request) do
+      connection.execute_request(verb, path, opts)
+    end
+
+    let!(:mocked_endpoint) do
+      stub_request(verb, stubbed_url)
+        .to_return(body: response_body, status: response_status)
+    end
+
+    it 'makes a request' do
+      expect{ execute_request }.to_not raise_error
+      expect(mocked_endpoint).to have_been_made.once
+    end
   end
 end

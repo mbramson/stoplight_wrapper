@@ -1,5 +1,6 @@
 require "bundler/setup"
 require "stoplight_wrapper"
+require 'webmock/rspec'
 require 'pry'
 
 RSpec.configure do |config|

@@ -29,7 +29,7 @@ class StoplightConnection
     execute_request(:post, path, opts)
   end
 
-  def execute_request(verb, path, opts = {})
+  def execute_request(verb, path = '', opts = {})
     resource_id = opts.delete(:resource_id)
     @stoplight_name ||= generate_stoplight_name(verb, path)
     total_path = build_path(path, resource_id)
