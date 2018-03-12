@@ -5,13 +5,15 @@ class StoplightConnection
   class ConfigurationError < StandardError; end
   class ResponseError < StandardError; end
 
-  def initialize(endpoint, options)
+  attr_reader :endpoint, :stoplight_name, :light
+  def initialize(endpoint, opts)
     raise ConfigurationError.new('no endpoint supplied') unless endpoint
     @endpoint = endpoint
-    @ssl = options[:ssl]
-    @default_timeout = options[:timeout]
-    @faraday_adapter = params[:adapter]
-    @redis = options[:redis]
+    @ssl = opts[:ssl]
+    @default_timeout = opts[:timeout]
+    @faraday_adapter = opts[:adapter]
+    binding.pry
+    @redis = opts[:redis]
     @success_check = nil
     @light_opts = opts.delete(:light_opts) || {}
     @stoplight_name = @light_opts[:name]
@@ -82,7 +84,7 @@ class StoplightConnection
 
   def data_store
     if @redis
-      Stoplight::DataStore::Redis.new(redis)
+      Stoplight::DataStore::Redis.new(@redis)
     else
       Stoplight::DataStore::Memory.new
     end
