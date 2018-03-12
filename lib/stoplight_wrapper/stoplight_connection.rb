@@ -6,13 +6,12 @@ class StoplightConnection
   class ResponseError < StandardError; end
 
   attr_reader :endpoint, :stoplight_name, :light
-  def initialize(endpoint, opts)
+  def initialize(endpoint, opts = {})
     raise ConfigurationError.new('no endpoint supplied') unless endpoint
     @endpoint = endpoint
     @ssl = opts[:ssl]
     @default_timeout = opts[:timeout]
     @faraday_adapter = opts[:adapter]
-    binding.pry
     @redis = opts[:redis]
     @success_check = nil
     @light_opts = opts.delete(:light_opts) || {}
@@ -22,7 +21,11 @@ class StoplightConnection
     initialize_stoplight
   end
 
-  def post(path, opts = {})
+  def get(path = '', opts = {})
+    execute_request(:get, path, opts)
+  end
+
+  def post(path = '', opts = {})
     execute_request(:post, path, opts)
   end
 
@@ -40,12 +43,12 @@ class StoplightConnection
   def call_server(verb, path, opts)
     conn = faraday_connection(opts)
     conn.basic_auth opts[:user], opts[:password] if (opts[:user] && opts[:password])
-    response = send_request(verb, path, opts)
+    response = send_request(conn, verb, path, opts)
     verify_success(response)
     response
   end
 
-  def send_request(verb, path, opts)
+  def send_request(conn, verb, path, opts)
     conn.send(verb) do |request|
       request.url path
       request.body = opts[:body] if opts[:body]
@@ -59,7 +62,7 @@ class StoplightConnection
       @success_check.call(response)
     else
       unless response.success?
-        message = {status: response.status, body: response.body}.to_json
+        message = {status: response.status, body: response.body}
         raise(ResponseError.new(message))
       end
     end
@@ -72,9 +75,9 @@ class StoplightConnection
   end
 
   def faraday_connection(connection_options)
-    Faraday::Connection.new(host, connection_options).tap do |conn|
+    Faraday::Connection.new(@endpoint, connection_options).tap do |conn|
       # Is it okay to pass in timeout through options
-      conn.adapter @adapter
+      conn.adapter @adapter if @adapter
     end
   end
 
@@ -93,7 +96,7 @@ class StoplightConnection
   private
 
   def generate_stoplight_name(verb, path)
-    "#{verb}-light-#{host.gsub(/http(s)?:\/\//,'')}-#{path}".gsub(/[.\/]/,'-')
+    "#{verb}-light-#{@endpoint.gsub(/http(s)?:\/\//,'')}-#{path}".gsub(/[.\/]/,'-')
   end
 
   def build_path(path, resource_id)
