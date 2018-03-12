@@ -5,7 +5,6 @@ RSpec.describe StoplightConnection do
     subject(:conn) { StoplightConnection.new(endpoint, options) }
 
     context 'when called without any options' do
-
       it 'can be created without error' do
         expect{ conn }.to_not raise_error
       end
@@ -35,5 +34,9 @@ RSpec.describe StoplightConnection do
           .to be_a(Stoplight::DataStore::Redis)
       end
     end
+  end
+
+  describe '#execute_request' do
+
   end
 end
